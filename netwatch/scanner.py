@@ -32,7 +32,7 @@ def __discover_hosts(target: str, options:str, exclude_hosts : list) -> NmapRepo
 
 def scan_network(target: str) -> NmapReport:
     parsed = None
-    nm = NmapProcess(target, options="-sV -O -Pn")
+    nm = NmapProcess(target, options="-sV -O -Pn -p- -T2")
     rc = nm.sudo_run()
     if rc != 0:
         print("Something went wrong running host scan: {0}".format(nm.stderr))

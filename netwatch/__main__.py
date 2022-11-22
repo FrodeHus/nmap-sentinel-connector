@@ -11,7 +11,9 @@ def main(argv):
     log_name = "NetworkAudit"
     try:
         opts, args = getopt.getopt(
-            argv, "ht:w:k:l:f:", ["target=", "workspace-id=", "shared-key=", "log-name=","file="]
+            argv,
+            "ht:w:k:l:f:",
+            ["target=", "workspace-id=", "shared-key=", "log-name=", "file="],
         )
     except getopt.GetoptError:
         print("{0} -t <target host/network>".format(__name__))
@@ -29,7 +31,11 @@ def main(argv):
         elif opt in ("-f", "--file"):
             output_file = arg
         elif opt == "-h":
-            print("{0} -t <target host/network> -w <log analytics workspace id> -l <custom log name> -k <workspace shared key> [-f <outputfile>]".format(__name__))
+            print(
+                "{0} -t <target host/network> -w <log analytics workspace id> -l <custom log name> -k <workspace shared key> [-f <outputfile>]".format(
+                    __name__
+                )
+            )
             sys.exit(0)
 
     hosts = scanner.discover_hosts(target)
@@ -51,7 +57,10 @@ def main(argv):
             if len(serv.banner):
                 service["banner"] = serv.banner
             services.append(service)
-        if detected_host.os_fingerprinted and len(detected_host.os_match_probabilities()) > 0:
+        if (
+            detected_host.os_fingerprinted
+            and len(detected_host.os_match_probabilities()) > 0
+        ):
             os_probabilities = detected_host.os_match_probabilities()
             os = os_probabilities.pop().name
 
@@ -64,9 +73,9 @@ def main(argv):
         }
         payload = json.dumps(report)
         final_report.append(report)
-        if(workspace_id):
+        if workspace_id:
             sentinel.post_data(workspace_id, shared_key, payload, log_name)
-    
+
     if output_file:
         with open(output_file, "w") as f:
             f.write(json.dumps(final_report, indent=2))

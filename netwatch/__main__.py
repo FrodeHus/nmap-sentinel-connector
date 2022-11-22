@@ -1,4 +1,5 @@
 import json
+import logging
 import sys, getopt
 from netwatch import scanner, sentinel
 
@@ -12,8 +13,8 @@ def main(argv):
     try:
         opts, args = getopt.getopt(
             argv,
-            "ht:w:k:l:f:",
-            ["target=", "workspace-id=", "shared-key=", "log-name=", "file="],
+            "vht:w:k:l:f:",
+            ["target=", "workspace-id=", "shared-key=", "log-name=", "file=", "verbose"],
         )
     except getopt.GetoptError:
         print("{0} -t <target host/network>".format(__name__))
@@ -30,6 +31,8 @@ def main(argv):
             log_name = arg
         elif opt in ("-f", "--file"):
             output_file = arg
+        elif opt in ("-v", "--verbose"):
+            logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
         elif opt == "-h":
             print(
                 "{0} -t <target host/network> -w <log analytics workspace id> -l <custom log name> -k <workspace shared key> [-f <outputfile>]".format(
@@ -39,12 +42,12 @@ def main(argv):
             sys.exit(0)
 
     hosts = scanner.discover_hosts(target)
-    print("Detected {0} hosts".format(len(hosts)))
+    logging.info("detected {0} hosts".format(len(hosts)))
     final_report = []
     for address in hosts:
-        print("- Scanning {0}".format(address))
-        host_report = scanner.scan_network(address)
-        detected_host = host_report.hosts.pop()
+        logging.info("scanning {0}".format(address))
+        target_report = scanner.scan_target(address)
+        detected_host = target_report.hosts.pop()
         services = []
         os = "unknown"
         for serv in detected_host.services:

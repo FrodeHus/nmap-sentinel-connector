@@ -1,5 +1,4 @@
 import json
-import socket
 import sys, getopt
 from netwatch import scanner, sentinel
 
@@ -29,13 +28,21 @@ def main(argv):
         elif opt == "-h":
             print("{0} -t <target host/network>".format(__name__))
 
-    report = scanner.scan_network(target)
-    hosts = []
-    online_hosts = (host for host in report.hosts if host.is_up())
-    for host in online_hosts:
+    host_report = scanner.discover_hosts(target)
+    print(
+        "Detected {0} hosts of a total {1}".format(
+            host_report.hosts_up, host_report.hosts_total
+        )
+    )
+    online_hosts = (host.address for host in host_report.hosts if host.is_up())
+
+    for address in online_hosts:
+        print("- Scanning {0}".format(address))
+        host_report = scanner.scan_network(address)
+        detected_host = host_report.hosts.pop()
         services = []
-        os = 'unknown'        
-        for serv in host.services:
+        os = "unknown"
+        for serv in detected_host.services:
             service = {
                 "port": serv.port,
                 "protocol": serv.protocol,
@@ -45,26 +52,19 @@ def main(argv):
             if len(serv.banner):
                 service["banner"] = serv.banner
             services.append(service)
-        if len(host.hostnames):
-            hostname = host.hostnames.pop()
-        else:
-            hostname = socket.gethostbyaddr(host.address)
-        if host.os_fingerprinted:
-            os_probabilities = host.os_match_probabilities()
+        if detected_host.os_fingerprinted:
+            os_probabilities = detected_host.os_match_probabilities()
             os = os_probabilities.pop().name
-            
-        report = {
-            "id": host.id,
-            "hostname": hostname,
-            "network_address_IPv4": host.address,
-            "status": host.status,
-            "services": services,
-            "os": os
-        }
-        hosts.append(report)
 
-    payload = json.dumps(hosts)
-    sentinel.post_data(workspace_id, shared_key, payload, log_name)
+        report = {
+            "id": detected_host.id,
+            "network_address_IPv4": detected_host.address,
+            "status": detected_host.status,
+            "services": services,
+            "os": os,
+        }
+        payload = json.dumps(report)
+        sentinel.post_data(workspace_id, shared_key, payload, log_name)
 
 
 if __name__ == "__main__":

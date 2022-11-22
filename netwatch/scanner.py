@@ -1,3 +1,4 @@
+import os
 from loguru import logger as logging
 import sys
 from libnmap.process import NmapProcess
@@ -41,7 +42,10 @@ def __discover_hosts(target: str, options: str, exclude_hosts: list) -> NmapRepo
     else:
         nm = NmapProcess(target, options="-sn {0}".format(options))
 
-    rc = nm.sudo_run()
+    if os.geteuid() != 0:
+        rc = nm.sudo_run()
+    else:
+        rc = nm.run()
     if rc != 0:
         logging.error(
             "something went wrong running host discovery: {0}".format(nm.stderr)
@@ -55,9 +59,13 @@ def __discover_hosts(target: str, options: str, exclude_hosts: list) -> NmapRepo
 
 
 def scan_target(target: str) -> NmapReport:
+    logging.info("scanning {addr}", addr=target)
     parsed = None
-    nm = NmapProcess(target, options="-sV -O -Pn -p-")
-    rc = nm.sudo_run()
+    nm = NmapProcess(target, options="-sV -O -Pn -p- --max-retries 3 --host-timeout 300")
+    if os.geteuid() != 0:
+        rc = nm.sudo_run()
+    else:
+        rc = nm.run()
     if rc != 0:
         logging.error("something went wrong running host scan: {0}".format(nm.stderr))
         sys.exit(2)

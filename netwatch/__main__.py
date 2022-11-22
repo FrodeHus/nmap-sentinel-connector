@@ -1,4 +1,5 @@
 import json
+import concurrent.futures
 from loguru import logger as logging
 import sys, getopt
 from netwatch import scanner, sentinel
@@ -52,10 +53,11 @@ def main(argv):
     hosts = scanner.discover_hosts(target)
     logging.success("detected {num_hosts} hosts", num_hosts=len(hosts))
     final_report = []
-    for address in hosts:
-        logging.info("scanning {addr}",addr=address)
-        target_report = scanner.scan_target(address)
-        detected_host = target_report.hosts.pop()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        reports = executor.map(scanner.scan_target, hosts)
+        
+    for report in reports:
+        detected_host = report.hosts.pop()
         services = []
         os = "unknown"
         for serv in detected_host.services:

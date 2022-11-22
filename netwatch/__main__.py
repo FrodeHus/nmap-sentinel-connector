@@ -28,15 +28,10 @@ def main(argv):
         elif opt == "-h":
             print("{0} -t <target host/network>".format(__name__))
 
-    host_report = scanner.discover_hosts(target)
-    print(
-        "Detected {0} hosts of a total {1}".format(
-            host_report.hosts_up, host_report.hosts_total
-        )
-    )
-    online_hosts = (host.address for host in host_report.hosts if host.is_up())
+    hosts = scanner.discover_hosts(target)
+    print("Detected {0} hosts".format(len(hosts)))
 
-    for address in online_hosts:
+    for address in hosts:
         print("- Scanning {0}".format(address))
         host_report = scanner.scan_network(address)
         detected_host = host_report.hosts.pop()
@@ -64,7 +59,10 @@ def main(argv):
             "os": os,
         }
         payload = json.dumps(report)
-        sentinel.post_data(workspace_id, shared_key, payload, log_name)
+        if(workspace_id):
+            sentinel.post_data(workspace_id, shared_key, payload, log_name)
+        else:
+            print(payload)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 import json
-import logging
+from loguru import logger as logging
 import sys, getopt
 from netwatch import scanner, sentinel
 
@@ -14,7 +14,14 @@ def main(argv):
         opts, args = getopt.getopt(
             argv,
             "vht:w:k:l:f:",
-            ["target=", "workspace-id=", "shared-key=", "log-name=", "file=", "verbose"],
+            [
+                "target=",
+                "workspace-id=",
+                "shared-key=",
+                "log-name=",
+                "file=",
+                "verbose",
+            ],
         )
     except getopt.GetoptError:
         print("{0} -t <target host/network>".format(__name__))
@@ -32,7 +39,8 @@ def main(argv):
         elif opt in ("-f", "--file"):
             output_file = arg
         elif opt in ("-v", "--verbose"):
-            logging.basicConfig(format='%(levelname)s:%(message)s',level=logging.INFO)
+            logging.remove()
+            logging.add(sys.stdout, level="INFO", format="[{time:HH:mm:ss}] {level} <yellow>{name}</yellow> <level>{message}</level>", colorize=True)
         elif opt == "-h":
             print(
                 "{0} -t <target host/network> -w <log analytics workspace id> -l <custom log name> -k <workspace shared key> [-f <outputfile>]".format(
@@ -42,10 +50,10 @@ def main(argv):
             sys.exit(0)
 
     hosts = scanner.discover_hosts(target)
-    logging.info("detected {0} hosts".format(len(hosts)))
+    logging.success("detected {num_hosts} hosts", num_hosts=len(hosts))
     final_report = []
     for address in hosts:
-        logging.info("scanning {0}".format(address))
+        logging.info("scanning {addr}",addr=address)
         target_report = scanner.scan_target(address)
         detected_host = target_report.hosts.pop()
         services = []
@@ -82,6 +90,7 @@ def main(argv):
     if output_file:
         with open(output_file, "w") as f:
             f.write(json.dumps(final_report, indent=2))
+    logging.success("Scan completed")
 
 
 if __name__ == "__main__":

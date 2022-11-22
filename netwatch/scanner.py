@@ -1,5 +1,4 @@
-import json
-import logging
+from loguru import logger as logging
 import sys
 from libnmap.process import NmapProcess
 from libnmap.parser import NmapParser, NmapParserException, NmapReport
@@ -14,12 +13,14 @@ def discover_hosts(target: str) -> list:
     ]
     hosts = list()
     for scan_type in scan_types:
-        logging.info("host discovery using {0} scan".format(scan_type["name"]))
+        logging.opt(colors=True).info(
+            "host discovery using <cyan>{scan}</cyan> scan", scan=scan_type["name"]
+        )
         report = __discover_hosts(target, scan_type["args"], hosts)
-        logging.info(
-            "found {0} alive hosts of total {1}".format(
-                report.hosts_up, report.hosts_total
-            )
+        logging.opt(colors=True).info(
+            "found <cyan>{alive}</cyan> alive hosts of total {total}",
+            alive=report.hosts_up,
+            total=report.hosts_total,
         )
         hosts.extend(
             host.address
@@ -42,7 +43,9 @@ def __discover_hosts(target: str, options: str, exclude_hosts: list) -> NmapRepo
 
     rc = nm.sudo_run()
     if rc != 0:
-        logging.error("something went wrong running host discovery: {0}".format(nm.stderr))
+        logging.error(
+            "something went wrong running host discovery: {0}".format(nm.stderr)
+        )
         sys.exit(2)
     try:
         parsed = NmapParser.parse(nm.stdout)
@@ -53,7 +56,7 @@ def __discover_hosts(target: str, options: str, exclude_hosts: list) -> NmapRepo
 
 def scan_target(target: str) -> NmapReport:
     parsed = None
-    nm = NmapProcess(target, options="-sV -O -Pn -p- -T2")
+    nm = NmapProcess(target, options="-sV -O -Pn -p-")
     rc = nm.sudo_run()
     if rc != 0:
         logging.error("something went wrong running host scan: {0}".format(nm.stderr))

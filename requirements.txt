@@ -1,3 +1,2 @@
-azure-monitor-ingestion
+requests
 python-libnmap
-defusedxml

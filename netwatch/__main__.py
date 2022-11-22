@@ -29,7 +29,8 @@ def main(argv):
         elif opt in ("-f", "--file"):
             output_file = arg
         elif opt == "-h":
-            print("{0} -t <target host/network>".format(__name__))
+            print("{0} -t <target host/network> -w <log analytics workspace id> -l <custom log name> -k <workspace shared key> [-f <outputfile>]".format(__name__))
+            sys.exit(0)
 
     hosts = scanner.discover_hosts(target)
     print("Detected {0} hosts".format(len(hosts)))

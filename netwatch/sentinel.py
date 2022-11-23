@@ -62,9 +62,5 @@ def post_data(customer_id, shared_key, body, log_type):
     }
 
     response = requests.post(uri, data=body, headers=headers)
-    if response.status_code >= 200 and response.status_code <= 299:
-        logging.success(
-            "successfully uploaded to Log Analytics Workspace {id}", id=customer_id
-        )
-    else:
+    if response.status_code < 200 or response.status_code > 299:
         logging.error("unable to write: {msg}", msg=response.status_code)

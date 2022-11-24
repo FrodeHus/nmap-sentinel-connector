@@ -8,16 +8,20 @@ from rich.console import Console
 import logging
 from rich.logging import RichHandler
 
+
 FORMAT = "%(message)s"
 logging.basicConfig(
     format=FORMAT, datefmt="[%X]", handlers=[RichHandler(rich_tracebacks=True)]
 )
 
+
 def main(argv):
+    print("[bold green]Easee Network Audit[/]")
     target = ""
     workspace_id = ""
     shared_key = ""
     output_file = None
+    quick_scan = False
     log_name = "NetworkAudit"
     if os.geteuid() != 0:
         print(
@@ -28,18 +32,12 @@ def main(argv):
     try:
         opts, args = getopt.getopt(
             argv,
-            "vht:w:k:l:f:n:",
-            [
-                "target=",
-                "workspace-id=",
-                "shared-key=",
-                "log-name=",
-                "file=",
-                "verbose"
-            ],
+            "qht:w:k:l:f:n:",
+            ["target=", "workspace-id=", "shared-key=", "log-name=", "file=", "quick"],
         )
-    except getopt.GetoptError:
-        print("{0} -t <target host/network>".format(__name__))
+    except getopt.GetoptError as e:
+        print("Didn't understand, try using '-h' for help.")
+        print(e.msg)
         sys.exit(2)
 
     for opt, arg in opts:
@@ -52,7 +50,9 @@ def main(argv):
         elif opt in ("-l", "--log-name"):
             log_name = arg
         elif opt in ("-f", "--file"):
-            output_file = arg            
+            output_file = arg
+        elif opt in ("-q", "--quick"):
+            quick_scan = True
         elif opt == "-h":
             print(r"-t \[target host/network]")
             print(r"-w \[log analytics workspace id]")
@@ -61,19 +61,17 @@ def main(argv):
             print(r"-f \[outputfile] <optional>")
             sys.exit(0)
 
-    hosts = scanner.discover_hosts(target)    
+    hosts = scanner.discover_hosts(target)
     final_report = []
     console = Console(force_terminal=True, force_interactive=True)
     with Progress(console=console) as progress:
-        report = scanner.scan_target(hosts, progress)
+        report = scanner.scan_target(hosts, progress, quick_scan)
         for host in [host for host in report.hosts if host.is_up()]:
             host_report = transform_scan(host)
             final_report.append(host_report)
             if workspace_id:
                 payload = json.dumps(host_report)
-                sentinel.post_data(
-                    workspace_id, shared_key, payload, log_name
-                )
+                sentinel.post_data(workspace_id, shared_key, payload, log_name)
 
     if output_file:
         with open(output_file, "w") as f:
@@ -101,20 +99,20 @@ def transform_scan(host: NmapHost):
         "status": host.status,
         "services": services,
         "vendor": host_os["vendor"],
-        "product": host_os["product"]
+        "product": host_os["product"],
     }
     return report
 
-def get_os(host : NmapHost):
+
+def get_os(host: NmapHost):
     rval = {"vendor": "unknown", "product": "unknown"}
     if host.is_up() and host.os_fingerprinted:
         cpelist = host.os.os_cpelist()
         if len(cpelist):
             mcpe = cpelist.pop()
-            rval.update(
-                {"vendor": mcpe.get_vendor(), "product": mcpe.get_product()}
-            )
+            rval.update({"vendor": mcpe.get_vendor(), "product": mcpe.get_product()})
     return rval
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

@@ -9,9 +9,10 @@ from rich.console import Console
 
 log = logging.getLogger("rich")
 
+
 def discover_hosts(target: str) -> list:
     scan_types = [
-        {"name": "Ping", "args": ""},
+        {"name": "ICMP Echo", "args": "-PE"},
         {"name": "UDP", "args": "-PU"},
         {"name": "ARP", "args": "-PR"},
         {"name": "TCP SYN", "args": "-PS22,135,80"},
@@ -50,9 +51,7 @@ def __discover_hosts(target: str, options: str, exclude_hosts: list) -> NmapRepo
     else:
         rc = nm.run()
     if rc != 0:
-        log.error(
-            "something went wrong running host discovery: {0}".format(nm.stderr)
-        )
+        log.error("something went wrong running host discovery: {0}".format(nm.stderr))
         sys.exit(2)
     try:
         parsed = NmapParser.parse(nm.stdout)
@@ -60,15 +59,28 @@ def __discover_hosts(target: str, options: str, exclude_hosts: list) -> NmapRepo
         log.error("error while discovering hosts: {0}".format(e.msg))
     return parsed
 
-def callback(nmap_task):
-    log.debug(type(nmap_task))
 
-def scan_target(target: list, progress: Progress) -> NmapReport:
+def scan_target(
+    target: list, progress: Progress, quick_scan: bool = False
+) -> NmapReport:
     task = progress.add_task(
         "[cyan]Scanning {0} hosts".format(len(target)), start=False, total=100
     )
+    scan_options = [
+        "-Pn",
+        "-O",
+        "--osscan-limit",
+        "-T5",
+        "--max-rtt-timeout 100ms",
+        "--max-parallelism 100",
+        "--min-hostgroup 100",
+    ]
+    if not quick_scan:
+        scan_options.append("-p-")
+        scan_options.append("-sV")
+
     parsed = None
-    nm = NmapProcess(target, options="-sV -Pn -p- -O", event_callback=callback)
+    nm = NmapProcess(target, options=" ".join(scan_options))
     if os.geteuid() != 0:
         nm.sudo_run_background()
     else:

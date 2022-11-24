@@ -16,7 +16,6 @@ logging.basicConfig(
 
 
 def main(argv):
-    print("[bold green]Easee Network Audit[/]")
     target = ""
     workspace_id = ""
     shared_key = ""
@@ -61,9 +60,11 @@ def main(argv):
             print(r"-f \[outputfile] <optional>")
             sys.exit(0)
 
+    console = Console(force_terminal=True, force_interactive=True)
+    console.rule("Easee Network Audit", align="left")
+
     hosts = scanner.discover_hosts(target)
     final_report = []
-    console = Console(force_terminal=True, force_interactive=True)
     with Progress(console=console) as progress:
         report = scanner.scan_target(hosts, progress, quick_scan)
         for host in [host for host in report.hosts if host.is_up()]:
@@ -100,17 +101,25 @@ def transform_scan(host: NmapHost):
         "services": services,
         "vendor": host_os["vendor"],
         "product": host_os["product"],
+        "os_match": host_os["os_match"],
     }
     return report
 
 
 def get_os(host: NmapHost):
-    rval = {"vendor": "unknown", "product": "unknown"}
+    rval = {"vendor": "unknown", "product": "unknown", "os_match": "unknown"}
     if host.is_up() and host.os_fingerprinted:
         cpelist = host.os.os_cpelist()
+        os_match = host.os.osmatches.sort(key=lambda m: m.accuracy, reverse=True).pop()
         if len(cpelist):
             mcpe = cpelist.pop()
-            rval.update({"vendor": mcpe.get_vendor(), "product": mcpe.get_product()})
+            rval.update(
+                {
+                    "vendor": mcpe.get_vendor(),
+                    "product": mcpe.get_product(),
+                    "os_match": os_match.name if os_match else "unknown",
+                }
+            )
     return rval
 
 

@@ -1,12 +1,13 @@
+import logging
 import os
 from time import sleep
-from loguru import logger as logging
 import sys
 from libnmap.process import NmapProcess
 from libnmap.parser import NmapParser, NmapParserException, NmapReport
 from rich.progress import Progress
 from rich.console import Console
 
+log = logging.getLogger("rich")
 
 def discover_hosts(target: str) -> list:
     scan_types = [
@@ -49,25 +50,25 @@ def __discover_hosts(target: str, options: str, exclude_hosts: list) -> NmapRepo
     else:
         rc = nm.run()
     if rc != 0:
-        logging.error(
+        log.error(
             "something went wrong running host discovery: {0}".format(nm.stderr)
         )
         sys.exit(2)
     try:
         parsed = NmapParser.parse(nm.stdout)
     except NmapParserException as e:
-        logging.error("error while discovering hosts: {0}".format(e.msg))
+        log.error("error while discovering hosts: {0}".format(e.msg))
     return parsed
 
+def callback(nmap_task):
+    log.debug(type(nmap_task))
 
-def scan_target(target: str, progress: Progress) -> NmapReport:
+def scan_target(target: list, progress: Progress) -> NmapReport:
     task = progress.add_task(
-        "[cyan]Scanning {0}".format(target), start=False, total=100
+        "[cyan]Scanning {0} hosts".format(len(target)), start=False, total=100
     )
     parsed = None
-    nm = NmapProcess(
-        target, options="-sV -O -Pn -p- --max-retries 3 --host-timeout 30m"
-    )
+    nm = NmapProcess(target, options="-sV -Pn -p- -O", event_callback=callback)
     if os.geteuid() != 0:
         nm.sudo_run_background()
     else:
@@ -76,11 +77,11 @@ def scan_target(target: str, progress: Progress) -> NmapReport:
     while nm.is_running():
         progress.update(task, completed=float(nm.progress))
         sleep(5)
-        
+
     progress.update(task, completed=100)
-    
+
     try:
         parsed = NmapParser.parse(nm.stdout)
     except NmapParserException as e:
-        logging.error("error while parsing scan: {0}".format(e.msg))
+        log.error("error while parsing scan: {0}".format(e.msg))
     return parsed

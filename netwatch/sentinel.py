@@ -2,9 +2,10 @@ import base64
 from datetime import datetime
 import hashlib
 import hmac
-from loguru import logger as logging
+import logging
 import requests
 
+log = logging.getLogger("rich")
 
 def __build_signature(
     customer_id, shared_key, date, content_length, method, content_type, resource

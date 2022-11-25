@@ -111,7 +111,8 @@ def get_os(host: NmapHost):
     if host.is_up() and host.os_fingerprinted:
         cpelist = host.os.os_cpelist()
         if len(host.os.osmatches) > 0:
-            os_match = host.os.osmatches.sort(key=lambda m: m.accuracy, reverse=True).pop()
+            host.os.osmatches.sort(key=lambda m: m.accuracy, reverse=True)
+            os_match = host.os.osmatches.pop()
         if len(cpelist):
             mcpe = cpelist.pop()
             rval.update(

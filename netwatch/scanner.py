@@ -44,7 +44,12 @@ def __discover_hosts(target: str, options: str, exclude_hosts: list) -> NmapRepo
             options="-sn {0} --exclude {1}".format(options, ",".join(exclude_hosts)),
         )
     else:
-        nm = NmapProcess(target, options="-sn {0} -T5 --max-parallelism 100 --max-hostgroup 100 --max-rtt-timeout 100ms".format(options))
+        nm = NmapProcess(
+            target,
+            options="-sn {0} -T5 --max-parallelism 100 --max-hostgroup 100 --max-rtt-timeout 100ms".format(
+                options
+            ),
+        )
 
     if os.geteuid() != 0:
         rc = nm.sudo_run()
@@ -64,16 +69,21 @@ def scan_target(
     target: list, progress: Progress, quick_scan: bool = False
 ) -> NmapReport:
     task = progress.add_task(
-        "[cyan]Scanning {0} hosts".format(len(target)), start=False, total=100
+        "[cyan]Scanning {0} hosts \[{1}]".format(
+            len(target), "quick" if quick_scan else "normal"
+        ),
+        start=False,
+        total=100,
     )
     scan_options = [
+        "-sS",
         "-Pn",
-        "-O",
-        "--osscan-limit",
-        "-T4",
+        "-T5",
         "--max-rtt-timeout 100ms",
         "--max-parallelism 100",
         "--min-hostgroup 100",
+        "-O",
+        "--osscan-limit",
     ]
     if not quick_scan:
         scan_options.append("-p-")

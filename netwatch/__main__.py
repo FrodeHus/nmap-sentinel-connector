@@ -1,5 +1,5 @@
 import json
-import sys, getopt, os
+import sys, os, argparse
 from netwatch import scanner, sentinel
 from rich.progress import Progress
 from libnmap.objects import NmapHost
@@ -16,66 +16,45 @@ logging.basicConfig(
 
 
 def main(argv):
-    target = ""
-    workspace_id = ""
-    shared_key = ""
-    output_file = None
-    quick_scan = False
-    log_name = "NetworkAudit"
     if os.geteuid() != 0:
         print(
             "Due to the nature of some of the scans used, this command needs to run as root"
         )
         sys.exit(1)
 
-    try:
-        opts, args = getopt.getopt(
-            argv,
-            "qht:w:k:l:f:n:",
-            ["target=", "workspace-id=", "shared-key=", "log-name=", "file=", "quick"],
-        )
-    except getopt.GetoptError as e:
-        print("Didn't understand, try using '-h' for help.")
-        print(e.msg)
-        sys.exit(2)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--target", type=str, help="Target host/network", required=True)
+    parser.add_argument("--workspace", type=str, help="Workspace ID")
+    parser.add_argument("--key", type=str, help="Workspace shared key")
+    parser.add_argument(
+        "--quick",
+        action=argparse.BooleanOptionalAction,
+        help="Enable quick scan",
+        default=False,
+    )
+    parser.add_argument(
+        "--log-name", type=str, help="Custom log name", default="NetworkAudit"
+    )
+    parser.add_argument("--output-file", type=str, help="Output file (JSON)")
 
-    for opt, arg in opts:
-        if opt in ("-t", "--target"):
-            target = arg
-        elif opt in ("-w", "--workspace-id"):
-            workspace_id = arg
-        elif opt in ("-k", "--shared-key"):
-            shared_key = arg
-        elif opt in ("-l", "--log-name"):
-            log_name = arg
-        elif opt in ("-f", "--file"):
-            output_file = arg
-        elif opt in ("-q", "--quick"):
-            quick_scan = True
-        elif opt == "-h":
-            print(r"-t \[target host/network]")
-            print(r"-w \[log analytics workspace id]")
-            print(r"-l \[custom log name]")
-            print(r"-k \[workspace shared key]")
-            print(r"-f \[outputfile] <optional>")
-            sys.exit(0)
+    args = parser.parse_args()
 
     console = Console(force_terminal=True, force_interactive=True)
     console.rule("Easee Network Audit", align="left")
 
-    hosts = scanner.discover_hosts(target)
+    hosts = scanner.discover_hosts(args.target)
     final_report = []
     with Progress(console=console) as progress:
-        report = scanner.scan_target(hosts, progress, quick_scan)
+        report = scanner.scan_target(hosts, progress, quick_scan=args.quick)
         for host in [host for host in report.hosts if host.is_up()]:
             host_report = transform_scan(host)
             final_report.append(host_report)
-            if workspace_id:
+            if args.workspace:
                 payload = json.dumps(host_report)
-                sentinel.post_data(workspace_id, shared_key, payload, log_name)
+                sentinel.post_data(args.workspace, args.key, payload, args.log_name)
 
-    if output_file:
-        with open(output_file, "w") as f:
+    if args.output_file:
+        with open(args.output_file, "w") as f:
             f.write(json.dumps(final_report, indent=2))
 
 

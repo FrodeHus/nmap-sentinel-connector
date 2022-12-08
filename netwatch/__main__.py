@@ -22,20 +22,28 @@ def main(argv):
         )
         sys.exit(1)
 
+    boolAction = (
+        argparse.BooleanOptionalAction
+        if hasattr(argparse, "BooleanOptionalAction")
+        else "store_true"
+    )
     parser = argparse.ArgumentParser()
-    parser.add_argument("--target", type=str, help="Target host/network", required=True)
-    parser.add_argument("--workspace", type=str, help="Workspace ID")
-    parser.add_argument("--key", type=str, help="Workspace shared key")
     parser.add_argument(
+        "-t", "--target", type=str, help="Target host/network", required=True
+    )
+    parser.add_argument("-w", "--workspace", type=str, help="Workspace ID")
+    parser.add_argument("-k", "--key", type=str, help="Workspace shared key")
+    parser.add_argument(
+        "-q",
         "--quick",
-        action=argparse.BooleanOptionalAction,
+        action=boolAction,
         help="Enable quick scan",
         default=False,
     )
     parser.add_argument(
-        "--log-name", type=str, help="Custom log name", default="NetworkAudit"
+        "-l", "--log-name", type=str, help="Custom log name", default="NetworkAudit"
     )
-    parser.add_argument("--output-file", type=str, help="Output file (JSON)")
+    parser.add_argument("-o", "--output-file", type=str, help="Output file (JSON)")
 
     args = parser.parse_args()
 

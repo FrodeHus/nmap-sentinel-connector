@@ -12,7 +12,6 @@
             "sendToLogAnalytics": false,
             "outputFile": "host.json"
         }
-
     ],
     "logAnalytics": {
         "workspaceId": "00000-000000-0000-00000",

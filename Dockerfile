@@ -4,4 +4,4 @@ WORKDIR /netwatcher
 COPY . .
 RUN pip3 install -r requirements.txt
 ENV PYTHONIOENCODING=utf8
-ENTRYPOINT [ "python3", "-m", "netwatch" ]
+ENTRYPOINT [ "python3", "-m", "netaudit" ]

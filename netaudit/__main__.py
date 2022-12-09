@@ -1,7 +1,7 @@
 import json
 import sys, os, argparse
 from time import sleep
-from netwatch import scanner, sentinel
+from netaudit import scanner, sentinel
 from rich.progress import Progress
 from libnmap.objects import NmapHost
 from rich import print

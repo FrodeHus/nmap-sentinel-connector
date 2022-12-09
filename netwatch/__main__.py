@@ -1,9 +1,11 @@
 import json
 import sys, os, argparse
+from time import sleep
 from netwatch import scanner, sentinel
 from rich.progress import Progress
 from libnmap.objects import NmapHost
 from rich import print
+from rich.progress import track
 from rich.console import Console
 import logging
 from rich.logging import RichHandler
@@ -28,28 +30,41 @@ def main(argv):
         else "store_true"
     )
     parser = argparse.ArgumentParser()
+    parser.add_argument("--target", type=str, help="Target host/network", required=True)
+    parser.add_argument("--workspace", type=str, help="Workspace ID")
+    parser.add_argument("--key", type=str, help="Workspace shared key")
     parser.add_argument(
-        "-t", "--target", type=str, help="Target host/network", required=True
-    )
-    parser.add_argument("-w", "--workspace", type=str, help="Workspace ID")
-    parser.add_argument("-k", "--key", type=str, help="Workspace shared key")
-    parser.add_argument(
-        "-q",
         "--quick",
         action=boolAction,
         help="Enable quick scan",
         default=False,
     )
     parser.add_argument(
-        "-l", "--log-name", type=str, help="Custom log name", default="NetworkAudit"
+        "--log-name", type=str, help="Custom log name", default="NetworkAudit"
     )
-    parser.add_argument("-o", "--output-file", type=str, help="Output file (JSON)")
+    parser.add_argument("--output-file", type=str, help="Output file (JSON)")
+    parser.add_argument("--schedule", help="Run scan every <num> minutes", type=int)
 
     args = parser.parse_args()
 
     console = Console(force_terminal=True, force_interactive=True)
-    console.rule("Easee Network Audit", align="left")
+    console.rule(
+        "{0}Easee Network Audit".format("Scheduled " if args.schedule else ""),
+        align="left",
+    )
 
+    if args.schedule:
+        while True:
+            run_audit(args, console)
+            for i in track(
+                range(args.schedule), description="Waiting for next scan [{0} minutes]...".format(args.schedule)
+            ):
+                sleep(60)
+    else:
+        run_audit(args, console)
+
+
+def run_audit(args: argparse.Namespace, console: Console):
     hosts = scanner.discover_hosts(args.target)
     final_report = []
     with Progress(console=console) as progress:

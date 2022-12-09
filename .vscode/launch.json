@@ -8,9 +8,9 @@
             "name": "Python: Module",
             "type": "python",
             "request": "launch",
-            "module": "netwatch",
+            "module": "netaudit",
             "justMyCode": true,
-            "args": ["-t", "10.90.5.194"]
+            "args": ["--config-file", "sample-config.json"]
         }
     ]
 }

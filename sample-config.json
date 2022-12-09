@@ -1,0 +1,23 @@
+{
+    "targets": [
+        {
+            "name": "local network",
+            "target": "192.168.0.0/24",
+            "quickScan": true
+        },
+        {
+            "name": "scary server",
+            "target": "10.0.0.100",
+            "quickScan": false,
+            "sendToLogAnalytics": false,
+            "outputFile": "host.json"
+        }
+
+    ],
+    "logAnalytics": {
+        "workspaceId": "00000-000000-0000-00000",
+        "sharedAccessKey": "abcdefghjiklmnopqrstuvwsxyzæøå",
+        "logName": "NetworkAudit"
+    },
+    "runEvery": 30
+}

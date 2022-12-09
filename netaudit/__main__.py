@@ -57,7 +57,7 @@ def main(argv):
         config = create_config_from_args(args)
     console = Console(force_terminal=True, force_interactive=True)
     console.rule(
-        "{0}Easee Network Audit".format("Scheduled " if config.schedule else ""),
+        "{0}Easee Network Audit [yellow]\[{1} target(s)]".format("Scheduled " if config.schedule else "", len(config.targets)),
         align="left",
     )
 
@@ -94,7 +94,7 @@ def create_config_from_args(args: argparse.Namespace) -> ConfigFile:
 
 def run_audit(config: ConfigFile, console: Console):
     for target in config.targets:
-        console.print("[cyan]\[{0}][/]".format(target.name))
+        console.print("[cyan]\[{0}][/] {1}".format(target.name, target.target))
         hosts = scanner.discover_hosts(target.target)
         final_report = []
         with Progress(console=console) as progress:

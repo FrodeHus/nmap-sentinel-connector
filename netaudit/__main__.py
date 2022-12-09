@@ -20,11 +20,11 @@ logging.basicConfig(
 
 
 def main(argv):
-    # if os.geteuid() != 0:
-    #     print(
-    #         "Due to the nature of some of the scans used, this command needs to run as root"
-    #     )
-    #     sys.exit(1)
+    if os.geteuid() != 0:
+        print(
+            "Due to the nature of some of the scans used, this command needs to run as root"
+        )
+        sys.exit(1)
 
     boolAction = (
         argparse.BooleanOptionalAction

@@ -57,17 +57,19 @@ def main(argv):
         config = create_config_from_args(args)
     console = Console(force_terminal=True, force_interactive=True)
     console.rule(
-        "{0}Easee Network Audit [yellow]\[{1} target(s)]".format("Scheduled " if config.schedule else "", len(config.targets)),
+        "{0}Easee Network Audit [yellow]\[{1} target(s)]".format(
+            "Scheduled " if config.schedule else "", len(config.targets)
+        ),
         align="left",
     )
 
-    if args.schedule:
+    if config.schedule:
         while True:
             run_audit(config, console)
             for i in track(
-                range(args.schedule),
+                range(config.schedule),
                 description="Waiting for next scan [{0} minutes]...".format(
-                    args.schedule
+                    config.schedule
                 ),
             ):
                 sleep(60)
@@ -102,7 +104,7 @@ def run_audit(config: ConfigFile, console: Console):
             for host in [host for host in report.hosts if host.is_up()]:
                 host_report = transform_scan(host)
                 final_report.append(host_report)
-                if config.workspace_id:
+                if target.send_to_analytics:
                     payload = json.dumps(host_report)
                     sentinel.post_data(
                         config.log_analytics_config.workspace_id,

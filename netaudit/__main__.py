@@ -20,11 +20,6 @@ logging.basicConfig(
 
 
 def main(argv):
-    if os.geteuid() != 0:
-        print(
-            "Due to the nature of some of the scans used, this command needs to run as root"
-        )
-        sys.exit(1)
 
     boolAction = (
         argparse.BooleanOptionalAction
@@ -49,6 +44,13 @@ def main(argv):
     parser.add_argument("--schedule", help="Run scan every <num> minutes", type=int)
 
     args = parser.parse_args()
+
+    if os.geteuid() != 0:
+        print(
+            "Due to the nature of some of the scans used, this command needs to run as root"
+        )
+        sys.exit(1)
+
     if args.config_file:
         with open(args.config_file) as c:
             config_data = json.load(c)

@@ -17,3 +17,7 @@ Install pre-requisite modules `python3 -m pip install -r requirements.txt`
 or using a config file:
 
 `python3 -m netaudit --config-file sample-config.json`
+
+### Using Docker
+
+`docker run -it --rm -v ~/sample-config.json:/config.json reothor/networkaudit:latest --config-file /config.json`

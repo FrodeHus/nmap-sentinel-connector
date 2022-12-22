@@ -36,7 +36,7 @@ def __build_signature(
 
 
 def post_data(config : LogAnalyticsConfig, body):
-    if not config:
+    if not config or not config.enabled:
         return
     
     method = "POST"

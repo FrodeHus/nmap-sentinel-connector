@@ -10,6 +10,7 @@ class Target:
         quick_scan: bool = True,
         send_to_analytics: bool = True,
         output_file: str = None,
+        enabled: bool = True,
     ) -> None:
         """Represents a target to scan
 
@@ -25,6 +26,7 @@ class Target:
         self.quick_scan = quick_scan
         self.send_to_analytics = send_to_analytics
         self.output_file = output_file
+        self.enabled = enabled
 
         if not self.target:
             raise Exception("Must specify target")
@@ -32,7 +34,11 @@ class Target:
 
 class LogAnalyticsConfig:
     def __init__(
-        self, workspace_id: str, shared_access_key: str, log_name: str = "NetworkAudit"
+        self,
+        workspace_id: str,
+        shared_access_key: str,
+        log_name: str = "NetworkAudit",
+        enabled: bool = True,
     ) -> None:
         """Configuration for sending results to Log Analytics Workspace
 
@@ -44,6 +50,7 @@ class LogAnalyticsConfig:
         self.workspace_id = workspace_id
         self.shared_access_key = shared_access_key
         self.log_name = log_name
+        self.enabled = enabled
 
 
 _TYPE_HOSTS = Union[str, List[Union[str, Mapping[str, Union[str, int]]]]]
@@ -55,10 +62,12 @@ class ElasticSearchConfig:
         host: Optional[_TYPE_HOSTS],
         index_name: str,
         basic_auth: Optional[Union[str, Tuple[str, str]]] = None,
+        enabled: bool = True,
     ) -> None:
         self.host = host
         self.index_name = index_name
         self.basic_auth = basic_auth
+        self.enabled = enabled
 
 
 class ConfigFile:
@@ -98,6 +107,7 @@ class ConfigFile:
                 if "sendToLogAnalytics" in target_data
                 else True
             )
+            enabled = target_data["enabled"] if "enabled" in target_data else True
             targets.append(
                 Target(
                     name=name,
@@ -105,6 +115,7 @@ class ConfigFile:
                     quick_scan=quick_scan,
                     send_to_analytics=send_to_analytics,
                     output_file=output_file,
+                    enabled=enabled,
                 )
             )
 
@@ -142,10 +153,12 @@ class ConfigFile:
             if "logName" in analytics_config
             else "NetworkAudit"
         )
+        enabled = analytics_config["enabled"] if "enabled" in analytics_config else True
         return LogAnalyticsConfig(
             workspace_id=workspace_id,
             shared_access_key=shared_access_key,
             log_name=log_name,
+            enabled=enabled,
         )
 
     @staticmethod
@@ -155,7 +168,7 @@ class ConfigFile:
         )
         if not es_config:
             return None
-
+        enabled = es_config["enabled"] if "enabled" in es_config else True
         host = es_config["host"]
         index = es_config["index"]
         if "basicAuth" in es_config:
@@ -164,7 +177,7 @@ class ConfigFile:
                 es_config["basicAuth"]["password"],
             )
 
-        return ElasticSearchConfig(host, index, basic_auth=basicAuth)
+        return ElasticSearchConfig(host, index, basic_auth=basicAuth, enabled=enabled)
 
 
 ElasticBasicAuth = Tuple[str, str]

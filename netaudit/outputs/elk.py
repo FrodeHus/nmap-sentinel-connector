@@ -4,7 +4,7 @@ import uuid
 from netaudit.types import ElasticSearchConfig, Report
 
 def update_index(data : Report, config : ElasticSearchConfig):
-    if not config:
+    if not config or not config.enabled:
         return
     es = Elasticsearch(hosts=config.host, basic_auth=config.basic_auth)
     doc = data.__dict__

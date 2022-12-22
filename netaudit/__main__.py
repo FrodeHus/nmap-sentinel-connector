@@ -1,5 +1,6 @@
 import json
 import pprint
+import signal
 import sys, os, argparse
 from time import sleep
 from netaudit import scanner
@@ -20,9 +21,13 @@ logging.basicConfig(
     format=FORMAT, datefmt="[%X]", handlers=[RichHandler(rich_tracebacks=True)]
 )
 
+def gracefully_die(*args):
+    print("Stopped by user.")
+    sys.exit(0)
 
 def main(argv):
-
+    signal.signal(signal.SIGINT, gracefully_die)
+    signal.signal(signal.SIGTERM, gracefully_die)
     boolAction = (
         argparse.BooleanOptionalAction
         if hasattr(argparse, "BooleanOptionalAction")
@@ -99,7 +104,7 @@ def create_config_from_args(args: argparse.Namespace) -> ConfigFile:
 
 
 def run_audit(config: ConfigFile, console: Console):
-    for target in config.targets:
+    for target in [t for t in config.targets if t.enabled]:
         console.print("[cyan]\[{0}][/] {1}".format(target.name, target.target))
         hosts = scanner.discover_hosts(target.target)
         final_report = []

@@ -13,10 +13,20 @@
             "outputFile": "host.json"
         }
     ],
-    "logAnalytics": {
-        "workspaceId": "00000-000000-0000-00000",
-        "sharedAccessKey": "abcdefghjiklmnopqrstuvwsxyzæøå",
-        "logName": "NetworkAudit"
+    "outputs": {
+        "loganalytics": {
+            "workspaceId": "00000-000000-0000-00000",
+            "sharedAccessKey": "abcdefghjiklmnopqrstuvwsxyzæøå",
+            "logName": "NetworkAudit"
+        },
+        "elasticsearch": {
+            "host": "http://localhost:9200",
+            "basicAuth":{
+                "username": "elastic",
+                "password": "changeme"
+            },
+            "index": "network.audit"
+        }
     },
     "runEvery": 30
 }

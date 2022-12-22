@@ -1,7 +1,8 @@
 import json
+import pprint
 import sys, os, argparse
 from time import sleep
-from netaudit import scanner, sentinel
+from netaudit import scanner
 from rich.progress import Progress
 from libnmap.objects import NmapHost
 from rich import print
@@ -9,8 +10,9 @@ from rich.progress import track
 from rich.console import Console
 import logging
 from rich.logging import RichHandler
+from netaudit.outputs import elk, sentinel
 
-from netaudit.types import ConfigFile, Target, LogAnalyticsConfig
+from netaudit.types import ConfigFile, Report, Target, LogAnalyticsConfig
 
 
 FORMAT = "%(message)s"
@@ -107,20 +109,16 @@ def run_audit(config: ConfigFile, console: Console):
                 host_report = transform_scan(host)
                 final_report.append(host_report)
                 if target.send_to_analytics:
-                    payload = json.dumps(host_report)
-                    sentinel.post_data(
-                        config.log_analytics_config.workspace_id,
-                        config.log_analytics_config.shared_access_key,
-                        payload,
-                        config.log_analytics_config.log_name,
-                    )
+                    payload = json.dumps(host_report.__dict__)
+                    sentinel.post_data(config.log_analytics_config, payload)
+                    elk.update_index(host_report, config.elasticsearch_config)
 
         if target.output_file:
             with open(target.output_file, "w") as f:
                 f.write(json.dumps(final_report, indent=2))
 
 
-def transform_scan(host: NmapHost):
+def transform_scan(host: NmapHost) -> Report:
     services = []
     os = "unknown"
     for serv in host.services:
@@ -135,15 +133,14 @@ def transform_scan(host: NmapHost):
         services.append(service)
     host_os = get_os(host)
 
-    report = {
-        "id": host.id,
-        "network_address_IPv4": host.address,
-        "status": host.status,
-        "services": services,
-        "vendor": host_os["vendor"],
-        "product": host_os["product"],
-        "os_match": host_os["os_match"],
-    }
+    report = Report(
+        host.address,
+        host.status,
+        services,
+        host_os["vendor"],
+        host_os["product"],
+        host_os["os_match"],
+    )
     return report
 
 

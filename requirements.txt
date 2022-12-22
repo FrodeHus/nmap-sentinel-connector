@@ -2,3 +2,4 @@ requests
 python-libnmap
 rich
 argparse
+elasticsearch

@@ -5,7 +5,10 @@ import hmac
 import logging
 import requests
 
+from netaudit.types import LogAnalyticsConfig
+
 log = logging.getLogger("rich")
+
 
 def __build_signature(
     customer_id, shared_key, date, content_length, method, content_type, resource
@@ -32,15 +35,18 @@ def __build_signature(
     return authorization
 
 
-def post_data(customer_id, shared_key, body, log_type):
+def post_data(config : LogAnalyticsConfig, body):
+    if not config:
+        return
+    
     method = "POST"
     content_type = "application/json"
     resource = "/api/logs"
     rfc1123date = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
     content_length = len(body)
     signature = __build_signature(
-        customer_id,
-        shared_key,
+        config.workspace_id,
+        config.shared_access_key,
         rfc1123date,
         content_length,
         method,
@@ -49,7 +55,7 @@ def post_data(customer_id, shared_key, body, log_type):
     )
     uri = (
         "https://"
-        + customer_id
+        + config.workspace_id
         + ".ods.opinsights.azure.com"
         + resource
         + "?api-version=2016-04-01"
@@ -58,10 +64,10 @@ def post_data(customer_id, shared_key, body, log_type):
     headers = {
         "content-type": content_type,
         "Authorization": signature,
-        "Log-Type": log_type,
+        "Log-Type": config.log_name,
         "x-ms-date": rfc1123date,
     }
 
     response = requests.post(uri, data=body, headers=headers)
     if response.status_code < 200 or response.status_code > 299:
-        logging.error("unable to write: {msg}", msg=response.status_code)
+        logging.error("unable to write: {0}".format(response.status_code))

@@ -1,4 +1,5 @@
-from typing import List
+from datetime import datetime
+from typing import List, Mapping, Optional, Tuple, Union
 
 
 class Target:
@@ -45,11 +46,27 @@ class LogAnalyticsConfig:
         self.log_name = log_name
 
 
+_TYPE_HOSTS = Union[str, List[Union[str, Mapping[str, Union[str, int]]]]]
+
+
+class ElasticSearchConfig:
+    def __init__(
+        self,
+        host: Optional[_TYPE_HOSTS],
+        index_name: str,
+        basic_auth: Optional[Union[str, Tuple[str, str]]] = None,
+    ) -> None:
+        self.host = host
+        self.index_name = index_name
+        self.basic_auth = basic_auth
+
+
 class ConfigFile:
     def __init__(
         self,
         targets: List[Target],
         log_analytics_config: LogAnalyticsConfig = None,
+        elasticsearch_config: ElasticSearchConfig = None,
         schedule: int = None,
     ) -> None:
         """Represents a network audit configuration
@@ -61,6 +78,7 @@ class ConfigFile:
         """
         self.targets: List[Target] = targets
         self.log_analytics_config = log_analytics_config
+        self.elasticsearch_config = elasticsearch_config
         self.schedule = schedule
 
     @staticmethod
@@ -90,7 +108,25 @@ class ConfigFile:
                 )
             )
 
-        analytics_config = config_data["logAnalytics"]
+        outputs = config_data["outputs"]
+        analytics_config = ConfigFile.__parse_loganalytics_config(outputs)
+        elastic_config = ConfigFile.__parse_elasticsearch_config(outputs)
+        schedule = config_data["runEvery"] if "runEvery" in config_data else None
+        return ConfigFile(
+            targets,
+            analytics_config,
+            elastic_config,
+            schedule=schedule,
+        )
+
+    @staticmethod
+    def __parse_loganalytics_config(output_config: dict) -> LogAnalyticsConfig:
+        analytics_config = (
+            output_config["loganalytics"] if "loganalytics" in output_config else None
+        )
+        if not analytics_config:
+            return LogAnalyticsConfig(None, None)
+
         workspace_id = (
             analytics_config["workspaceId"]
             if "workspaceId" in analytics_config
@@ -106,14 +142,47 @@ class ConfigFile:
             if "logName" in analytics_config
             else "NetworkAudit"
         )
-
-        schedule = config_data["runEvery"] if "runEvery" in config_data else None
-        return ConfigFile(
-            targets,
-            LogAnalyticsConfig(
-                workspace_id=workspace_id,
-                shared_access_key=shared_access_key,
-                log_name=log_name,
-            ),
-            schedule=schedule,
+        return LogAnalyticsConfig(
+            workspace_id=workspace_id,
+            shared_access_key=shared_access_key,
+            log_name=log_name,
         )
+
+    @staticmethod
+    def __parse_elasticsearch_config(output_config: dict) -> ElasticSearchConfig:
+        es_config = (
+            output_config["elasticsearch"] if "elasticsearch" in output_config else None
+        )
+        if not es_config:
+            return None
+
+        host = es_config["host"]
+        index = es_config["index"]
+        if "basicAuth" in es_config:
+            basicAuth: ElasticBasicAuth = (
+                es_config["basicAuth"]["username"],
+                es_config["basicAuth"]["password"],
+            )
+
+        return ElasticSearchConfig(host, index, basic_auth=basicAuth)
+
+
+ElasticBasicAuth = Tuple[str, str]
+
+
+class Report:
+    def __init__(
+        self,
+        ipv4: str,
+        status: str,
+        services: list,
+        vendor: str,
+        product: str,
+        os_match: str,
+    ) -> None:
+        self.ipv4 = ipv4
+        self.status = status
+        self.services = services
+        self.vendor = vendor
+        self.product = product
+        self.os_match = os_match

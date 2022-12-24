@@ -21,9 +21,11 @@ logging.basicConfig(
     format=FORMAT, datefmt="[%X]", handlers=[RichHandler(rich_tracebacks=True)]
 )
 
+
 def gracefully_die(*args):
     print("Stopped by user.")
     sys.exit(0)
+
 
 def main(argv):
     signal.signal(signal.SIGINT, gracefully_die)
@@ -66,7 +68,7 @@ def main(argv):
         config = create_config_from_args(args)
     console = Console(force_terminal=True, force_interactive=True)
     console.rule(
-        "{0}Easee Network Audit [yellow]\[{1} target(s)]".format(
+        "{0}Nmap Network Audit [yellow]\[{1} target(s)]".format(
             "Scheduled " if config.schedule else "", len(config.targets)
         ),
         align="left",
@@ -120,7 +122,7 @@ def run_audit(config: ConfigFile, console: Console):
 
         if target.output_file:
             with open(target.output_file, "w") as f:
-                f.write(json.dumps(final_report, indent=2))
+                f.write(json.dumps([r.__dict__ for r in final_report], indent=2))
 
 
 def transform_scan(host: NmapHost) -> Report:
